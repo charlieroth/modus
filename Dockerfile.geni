@@ -1,0 +1,3 @@
+FROM ghcr.io/emilpriver/geni:v.1.1.4
+COPY ./migrations /migrations
+CMD ["up"]

@@ -1,0 +1,34 @@
+[package]
+name = "modus"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "modus"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "modus_server"
+path = "src/bin/server/main.rs"
+
+[dependencies]
+anyhow = "1.0.93"
+derive_more = { version = "1", features = ["full"] }
+thiserror = "2"
+uuid = { version = "1.11.0", features = [
+    "v4",
+    "fast-rng",
+    "macro-diagnostics",
+] }
+serde = { version = "1.0.215", features = ["std", "derive"] }
+axum = "0.7.9"
+tokio = { version = "1.42", features = ["full"] }
+tower-http = { version = "0.6.2", features = ["trace"] }
+tower-layer = "0.3.3"
+sqlx = { version = "0.8.2", features = [
+    "runtime-tokio",
+    "postgres",
+    "macros",
+    "uuid",
+] }
+dotenv = "0.15.0"
