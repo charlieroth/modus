@@ -1,4 +1,4 @@
-# Reminders
+# Modus
 
 A Server and CLI application for managing reminders.
 
@@ -27,11 +27,9 @@ A Server and CLI application for managing reminders.
 └── Makefile
 ```
 
-The `cmd` directory contains the entry points for the CLI, HTTP API and admin applications.
+The `src/bin` directory contains the entry points for the CLI, HTTP API and admin applications.
 
-The `docs` directory contains the OpenAPI specification for the project.
-
-The `internal` directory contains the shared logic for the project.
+The `src/lib` directory contains the shared logic for the project.
 
 The `migrations` directory contains the SQL migrations for the project.
 
