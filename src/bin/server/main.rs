@@ -1,4 +1,4 @@
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use modus::config::Config;
 use modus::domain::reminders::service::Service;
 use modus::inbound::http::{HttpServer, HttpServerConfig};
