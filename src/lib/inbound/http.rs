@@ -1,3 +1,4 @@
+use crate::domain::readiness::ports::ReadinessService;
 use crate::domain::reminders::ports::ReminderService;
 use crate::inbound::http::handlers::create_task::create_task;
 use crate::inbound::http::handlers::liveness::liveness;
@@ -20,8 +21,9 @@ pub struct HttpServerConfig<'a> {
 /// The global application start shared between all request
 /// handlers
 #[derive(Debug, Clone)]
-struct AppState<RS: ReminderService> {
+struct AppState<RS: ReminderService, RD: ReadinessService> {
     reminder_service: Arc<RS>,
+    readiness_service: Arc<RD>,
 }
 
 /// The application's HTTP server. The underlying HTTP package
@@ -35,11 +37,13 @@ impl HttpServer {
     /// Returns a new HTTP server bound to the port specified in `config`.
     pub async fn new(
         reminder_service: impl ReminderService,
+        readiness_service: impl ReadinessService,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
         // Construct dependencies to inject into handlers
         let state = AppState {
             reminder_service: Arc::new(reminder_service),
+            readiness_service: Arc::new(readiness_service),
         };
 
         let router = axum::Router::new()
@@ -63,9 +67,9 @@ impl HttpServer {
     }
 }
 
-fn api_routes<RS: ReminderService>() -> Router<AppState<RS>> {
+fn api_routes<RS: ReminderService, RD: ReadinessService>() -> Router<AppState<RS, RD>> {
     Router::new()
-        .route("/tasks", post(create_task::<RS>))
+        .route("/tasks", post(create_task::<RS, RD>))
         .route("/liveness", get(liveness))
-        .route("/readiness", get(readiness))
+        .route("/readiness", get(readiness::<RS, RD>))
 }

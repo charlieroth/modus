@@ -13,11 +13,11 @@ async fn main() -> anyhow::Result<()> {
     // tracing_subscriber::fmt::init();
     let sql = Sql::new(&config.database_url).await?;
     let reminder_service = ReminderService::new(sql.clone());
-    let readiness_service = ReadinessService::new(sql.pool);
+    let readiness_service = ReadinessService::new(sql.clone());
     let server_config = HttpServerConfig {
         port: &config.server_port,
     };
-    let http_server = HttpServer::new(reminder_service, server_config).await?;
+    let http_server = HttpServer::new(reminder_service, readiness_service, server_config).await?;
     println!("Starting server on port {}", config.server_port);
     http_server.run().await
 }

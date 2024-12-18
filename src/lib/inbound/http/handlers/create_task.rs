@@ -3,6 +3,7 @@ use axum::{http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::domain::readiness::ports::ReadinessService;
 use crate::domain::reminders::models::task::CreateTaskError;
 use crate::domain::reminders::models::task::{
     CreateTaskRequest, Task, TaskTitle, TaskTitleEmptyError,
@@ -81,8 +82,8 @@ impl CreateTaskHttpRequestBody {
 ///
 /// - 201 Created: the [Task] was sucessfully created.
 /// - 422 Unprocessable Entity: A [Task] with the same title already exists.
-pub async fn create_task<RS: ReminderService>(
-    State(state): State<AppState<RS>>,
+pub async fn create_task<RS: ReminderService, RD: ReadinessService>(
+    State(state): State<AppState<RS, RD>>,
     Json(body): Json<CreateTaskHttpRequestBody>,
 ) -> Result<ApiSuccess<CreateTaskResponseData>, ApiError> {
     let domain_req = body.try_into_domain()?;
@@ -97,6 +98,7 @@ pub async fn create_task<RS: ReminderService>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::readiness::models::ready::ReadinessError;
     use crate::domain::reminders::models::task::CreateTaskError;
     use crate::domain::reminders::models::task::{CreateTaskRequest, Task};
     use crate::domain::reminders::ports::ReminderService;
@@ -119,6 +121,20 @@ mod tests {
         }
     }
 
+    #[derive(Clone)]
+    struct MockReadinessService {
+        is_ready_result: Arc<std::sync::Mutex<Result<(), ReadinessError>>>,
+    }
+
+    impl ReadinessService for MockReadinessService {
+        async fn is_ready(&self) -> Result<(), ReadinessError> {
+            let mut guard = self.is_ready_result.lock();
+            let mut result = Err(ReadinessError::DatabaseNotReady);
+            mem::swap(guard.as_deref_mut().unwrap(), &mut result);
+            result
+        }
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn test_create_task_success() {
         let task_title = TaskTitle::new("Clean apartment").unwrap();
@@ -129,8 +145,12 @@ mod tests {
                 task_title.clone(),
             )))),
         };
+        let readiness_service = MockReadinessService {
+            is_ready_result: Arc::new(std::sync::Mutex::new(Ok(()))),
+        };
         let state = axum::extract::State(AppState {
             reminder_service: Arc::new(service),
+            readiness_service: Arc::new(readiness_service),
         });
         let body = axum::extract::Json(CreateTaskHttpRequestBody {
             title: task_title.to_string(),

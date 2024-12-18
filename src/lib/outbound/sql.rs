@@ -5,6 +5,8 @@ use sqlx::postgres::PgConnectOptions;
 use sqlx::{Executor, PgPool, Transaction};
 use uuid::Uuid;
 
+use crate::domain::readiness::models::ready::ReadinessError;
+use crate::domain::readiness::ports::ReadinessRepository;
 use crate::domain::reminders::models::task::CreateTaskError;
 use crate::domain::reminders::models::task::{CreateTaskRequest, Task, TaskTitle};
 use crate::domain::reminders::ports::ReminderRepository;
@@ -37,6 +39,12 @@ impl Sql {
         tx.execute(query).await?;
         Ok(id)
     }
+
+    async fn ready(&self) -> Result<(), ReadinessError> {
+        let query = sqlx::query!("SELECT 1 as health_check");
+        let _ = query.fetch_one(&self.pool).await;
+        Ok(())
+    }
 }
 
 impl ReminderRepository for Sql {
@@ -67,6 +75,16 @@ impl ReminderRepository for Sql {
             id: task_id,
             title: req.title().clone(),
             completed: false,
+        })
+    }
+}
+
+impl ReadinessRepository for Sql {
+    async fn is_ready(&self) -> Result<(), ReadinessError> {
+        self.ready().await.map_err(|e| {
+            anyhow!(e)
+                .context("failed to check if database is ready")
+                .into()
         })
     }
 }
