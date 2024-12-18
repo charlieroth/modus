@@ -1,7 +1,9 @@
 use crate::domain::reminders::ports::ReminderService;
 use crate::inbound::http::handlers::create_task::create_task;
+use crate::inbound::http::handlers::liveness::liveness;
+use crate::inbound::http::handlers::readiness::readiness;
 use anyhow::Context;
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::Router;
 use std::sync::Arc;
 use tokio::net;
@@ -62,5 +64,8 @@ impl HttpServer {
 }
 
 fn api_routes<RS: ReminderService>() -> Router<AppState<RS>> {
-    Router::new().route("/tasks", post(create_task::<RS>))
+    Router::new()
+        .route("/tasks", post(create_task::<RS>))
+        .route("/liveness", get(liveness))
+        .route("/readiness", get(readiness))
 }
