@@ -3,15 +3,10 @@ use modus::config::Config;
 use modus::domain::reminders::service::Service;
 use modus::inbound::http::{HttpServer, HttpServerConfig};
 use modus::outbound::sql::Sql;
-use std::env;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
-    println!("Environment variables:");
-    for (key, value) in env::vars() {
-        println!("{}: {}", key, value);
-    }
     let config = Config::from_env()?;
     // A minimal tracing middleware for request logging
     // tracing_subscriber::fmt::init();
@@ -21,5 +16,6 @@ async fn main() -> anyhow::Result<()> {
         port: &config.server_port,
     };
     let http_server = HttpServer::new(reminder_service, server_config).await?;
+    println!("Starting server on port {}", config.server_port);
     http_server.run().await
 }

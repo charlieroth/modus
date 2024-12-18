@@ -44,7 +44,7 @@ impl HttpServer {
             .nest("/api", api_routes())
             .with_state(state);
 
-        let listener = net::TcpListener::bind(format!("0.0.0.:{}", config.port))
+        let listener = net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
             .await
             .with_context(|| format!("failed to listen on {}", config.port))?;
 
